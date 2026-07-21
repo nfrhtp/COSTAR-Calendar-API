@@ -1,0 +1,16 @@
+/*
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+
+/v1/dataset.csv
+  Cache-Control: public, max-age=86400
+  Content-Disposition: inline; filename="costar-calendar-dataset.csv"
+
+/v1/dataset.json
+  Cache-Control: public, max-age=86400
+
+/v1/meta.json
+  Cache-Control: public, max-age=3600
+
+/v1/data/*
+  Cache-Control: public, max-age=3600

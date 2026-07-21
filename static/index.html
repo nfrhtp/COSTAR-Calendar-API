@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COSTAR Calendar API</title>
+<style>
+  :root { color-scheme: light dark;
+    --fg: #1d1d1f; --bg: #fffdf8; --muted: #6b6b70; --line: #e4e0d6;
+    --accent: #7a5c9e; --code-bg: #f4f1ea; }
+  @media (prefers-color-scheme: dark) { :root {
+    --fg: #e8e6e1; --bg: #17161a; --muted: #9b98a3; --line: #34323b;
+    --accent: #b79fd6; --code-bg: #232128; } }
+  body { margin: 0 auto; max-width: 46rem; padding: 2.5rem 1.25rem 5rem;
+    font: 16px/1.6 "Baskerville", "Libre Baskerville", Georgia, serif;
+    color: var(--fg); background: var(--bg); }
+  h1 { font-weight: 500; letter-spacing: .02em; margin-bottom: .25rem; }
+  h2 { font-weight: 500; margin-top: 2.5rem; border-bottom: 1px solid var(--line);
+    padding-bottom: .3rem; }
+  .sub { color: var(--muted); margin-top: 0; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: .85em; background: var(--code-bg); border-radius: 4px; }
+  code { padding: .1em .35em; }
+  pre { padding: .8em 1em; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .95em; }
+  td, th { text-align: left; padding: .45em .6em; border-bottom: 1px solid var(--line);
+    vertical-align: top; }
+  a { color: var(--accent); }
+  .note { border-left: 3px solid var(--accent); padding: .1em 1em; margin: 1.2em 0;
+    color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>COSTAR Calendar API</h1>
+<p class="sub">Read-only JSON access to the COSTAR calendar — daily COSTAR dates,
+lumas, chromas, lunations, lunar phases, and solar events, 2000–2051.</p>
+
+<p>The COSTAR calendar maps lunar phases, solar events, and Gregorian dates onto
+cycles of rotunda (25 years), spiral years, quinquennia, lunations, 8-day spiral
+weeks, and luma/chroma designations. This API serves the same golden dataset that
+drives the <a href="https://ics.costar.date/costar-calendar.ics">calendar
+subscription feed</a>. No authentication, no keys — just fetch.</p>
+
+<pre>curl https://api.costar.date/v1/today</pre>
+
+<h2>Endpoints</h2>
+<table>
+<tr><th>Endpoint</th><th>Returns</th></tr>
+<tr><td><code>/v1/today</code></td><td>Today's day object, resolved in Pacific Time (the calendar's native zone)</td></tr>
+<tr><td><code>/v1/day/2026-07-21</code></td><td>One day</td></tr>
+<tr><td><code>/v1/range/2026-01-01/2026-03-01</code></td><td>Array of days (max 400 per request)</td></tr>
+<tr><td><code>/v1/month/2026-07</code> · <code>/v1/year/2026</code></td><td>Calendar-month / Gregorian-year ranges</td></tr>
+<tr><td><code>/v1/events/phases/2026</code></td><td>Lunar phase events for a year</td></tr>
+<tr><td><code>/v1/events/solar-terms/2026</code></td><td>The 12 major solar terms (incl. solstices/equinoxes)</td></tr>
+<tr><td><code>/v1/events/lunations/2026</code></td><td>Lunation starts (new moons) for a year</td></tr>
+<tr><td><code>/v1/events/shen</code></td><td>Every Shen lunation and Shen week in the dataset</td></tr>
+<tr><td><code>/v1/costar/R1/SY1/Red/Gamma/Yellow</code></td><td>Reverse lookup: COSTAR date → Gregorian date(s)</td></tr>
+<tr><td><code>/v1/dataset.csv</code> · <code>/v1/dataset.json</code></td><td>The full dataset in bulk</td></tr>
+<tr><td><code>/v1/meta</code></td><td>Coverage, dataset version, source checksum</td></tr>
+</table>
+
+<p>Add <code>?raw=1</code> to day/range/month/year endpoints to get the 41
+golden-CSV columns verbatim instead of structured JSON.</p>
+
+<h2>Day object</h2>
+<p>Structured responses group the resolved calendar values under
+<code>costar</code>, the slash-notation transition strings under
+<code>transitions</code>, and astronomy under <code>phase</code> /
+<code>solar</code>:</p>
+<pre>{
+  "date": "2026-07-21",
+  "costarDate": "R1 SY1 Red Beta Yellow",
+  "costar": { "rotundum": 1, "spiralYear": 1, "qLuma": "Alpha",
+              "syLuma": "Alpha", "lunation": "Red", "weekLuma": "Beta",
+              "dayChroma": "Yellow", "nightLuma": null,
+              "weekNumber": 30, "weekdayNumber": 3 },
+  "transitions": { "sy": "1", "weekLuma": "Beta", "…": "…" },
+  "specials": { "chroma": null, "luma": null },
+  "lunationStarting": null,
+  "phase": { "dayNumber": 7, "brownLunation": 1281, "lunationNumber": 328,
+             "event": { "name": "First Quarter", "number": 2, "timePT": "04:05",
+                        "utc": { "weekday": "Tue", "date": "2026-07-21",
+                                 "time": "11:05" } } },
+  "solar": null,
+  "gregorian": { "weekday": "Tuesday", "displayDate": "21 Jul 2026",
+                 "dayOfYear": 202, "julian": 2461243, "timezone": "PDT" },
+  "meta": { "apiVersion": "v1", "datasetVersion": "2026-07-05" }
+}</pre>
+
+<div class="note">
+<p><strong>Reverse lookup</strong> uses the <em>resolved</em> (CD) values, which
+are single-valued every day: the lunation is <code>White</code> or
+<code>Black</code> (never <code>White/Black</code>), the week luma is
+<code>Epsilon</code> or <code>Alpha</code>, and Sunday's day chroma is
+<code>Black</code>. Slash-notation transition values appear inside day payloads,
+never in URLs.</p>
+</div>
+
+<h2>Stability &amp; versioning</h2>
+<ul>
+<li><code>/v1</code> response shapes are frozen; changes are additive only.</li>
+<li>Calendar data can change by adjudication (rulings on the calendar's rules).
+Every response carries <code>meta.datasetVersion</code>; compare it to
+<code>/v1/meta</code> to detect stale caches.</li>
+<li>This is a free, best-effort service with no uptime guarantee.</li>
+</ul>
+
+<h2>License</h2>
+<p>Data is licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY
+4.0</a>. Attribute “COSTAR Calendar” and link to
+<code>https://api.costar.date/</code>, the canonical source. Source:
+<a href="https://github.com/nfrhtp/COSTAR-Calendar-API">github.com/nfrhtp/COSTAR-Calendar-API</a>.</p>
+</body>
+</html>
