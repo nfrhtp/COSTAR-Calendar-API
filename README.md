@@ -11,8 +11,12 @@ curl https://api.costar.date/v1/day/2026-07-21
 curl https://api.costar.date/v1/costar/R1/SY1/Red/Gamma/Yellow
 ```
 
-Full endpoint documentation lives on the landing page:
-https://api.costar.date/ (source: `static/index.html`).
+Documentation (all served by the API itself, sources in `static/`):
+
+- Endpoints: https://api.costar.date/
+- Field reference & calendar concepts: https://api.costar.date/reference.html
+- OpenAPI 3.1 spec: https://api.costar.date/v1/openapi.json
+- Change history: [CHANGELOG.md](CHANGELOG.md)
 
 - No authentication. CORS `*`. Free, best-effort service.
 - Data license: CC BY 4.0 — attribute “COSTAR Calendar”, link to

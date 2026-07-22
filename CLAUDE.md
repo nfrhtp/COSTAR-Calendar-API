@@ -52,3 +52,7 @@ CSV. The build refuses a CSV whose header deviates from the 41-column spec.
 - To update data after an adjudication: regenerate the golden CSV in the
   generator repo (tests green), copy it into `source/` (keeping its filename),
   delete the old copy, run the build + tests, commit. CI deploys.
+- Documentation must move with the code, in the same commit: any endpoint or
+  payload change updates `static/openapi.json`, `static/index.html`, and
+  `static/reference.html`; any deploy that changes endpoints, payloads, or the
+  dataset gets a `CHANGELOG.md` entry (consumers are told to watch that file).

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COSTAR Calendar API — Field Reference</title>
+<style>
+  :root { color-scheme: light dark;
+    --fg: #1d1d1f; --bg: #fffdf8; --muted: #6b6b70; --line: #e4e0d6;
+    --accent: #7a5c9e; --code-bg: #f4f1ea; }
+  @media (prefers-color-scheme: dark) { :root {
+    --fg: #e8e6e1; --bg: #17161a; --muted: #9b98a3; --line: #34323b;
+    --accent: #b79fd6; --code-bg: #232128; } }
+  body { margin: 0 auto; max-width: 50rem; padding: 2.5rem 1.25rem 5rem;
+    font: 16px/1.6 "Baskerville", "Libre Baskerville", Georgia, serif;
+    color: var(--fg); background: var(--bg); }
+  h1 { font-weight: 500; letter-spacing: .02em; margin-bottom: .25rem; }
+  h2 { font-weight: 500; margin-top: 2.5rem; border-bottom: 1px solid var(--line);
+    padding-bottom: .3rem; }
+  h3 { font-weight: 600; margin-top: 1.8rem; }
+  .sub { color: var(--muted); margin-top: 0; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: .85em; background: var(--code-bg); border-radius: 4px; }
+  code { padding: .1em .35em; }
+  pre { padding: .8em 1em; overflow-x: auto; }
+  .tw { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .92em; }
+  td, th { text-align: left; padding: .4em .6em; border-bottom: 1px solid var(--line);
+    vertical-align: top; }
+  a { color: var(--accent); }
+  .note { border-left: 3px solid var(--accent); padding: .1em 1em; margin: 1.2em 0;
+    color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Field Reference &amp; Calendar Concepts</h1>
+<p class="sub">Everything a builder needs to interpret COSTAR Calendar API
+responses. Endpoints are documented on the <a href="/">main page</a>; the
+machine-readable spec is at <a href="/v1/openapi.json">/v1/openapi.json</a>.</p>
+
+<h2>The calendar in brief</h2>
+<p>The COSTAR calendar is a mystical astronomical calendar. It does not replace
+the Gregorian calendar — it overlays it, assigning every Gregorian day (reckoned
+in Pacific Time, the calendar's native zone) a position inside nested cycles:</p>
+
+<div class="tw"><table>
+<tr><th>Cycle</th><th>Length</th><th>Values</th></tr>
+<tr><td><strong>Rotundum</strong></td><td>25 spiral years</td>
+    <td>Numbered: R0 began at the December 2000 southern solstice, R1 in
+        December 2025, R2 in December 2050. (Days before R0 carry R-1.)</td></tr>
+<tr><td><strong>Spiral year (SY)</strong></td><td>≈1 Gregorian year</td>
+    <td>SY1–SY25 within a rotundum; the year turns on the Southern Solstice
+        day, not January 1. Each SY carries a <em>SY luma</em>.</td></tr>
+<tr><td><strong>Quinquennium</strong></td><td>5 spiral years</td>
+    <td>Alpha (SY1–5), Beta (6–10), Gamma (11–15), Delta (16–20),
+        Epsilon (21–25) — the <em>Q luma</em>.</td></tr>
+<tr><td><strong>Lunation</strong></td><td>new moon → new moon</td>
+    <td>12 named lunations per spiral year — White/Black (contains the
+        Southern Solstice), Alpha, Green, Beta, Yellow, Orange, Gamma, Red,
+        Delta, Blue, Epsilon, Purple — plus an occasional 13th,
+        <strong>Shen</strong>, inserted when needed to keep the solstices and
+        equinoxes in their designated lunations.</td></tr>
+<tr><td><strong>Spiral week</strong></td><td>8 days, Sunday → Sunday</td>
+    <td>Each week carries a <em>week luma</em>: the new-moon week is
+        Epsilon/Alpha, then Beta, Gamma, and Delta go to the weeks containing
+        First Quarter, Full Moon, and Last Quarter. A long lunation's leftover
+        week is a Shen week.</td></tr>
+<tr><td><strong>Day</strong></td><td>1 day</td>
+    <td>A fixed <em>day chroma</em> by weekday, and on five nights a
+        <em>night luma</em> (see tables below).</td></tr>
+</table></div>
+
+<h3>Day chroma and night luma (fixed weekday sequences)</h3>
+<div class="tw"><table>
+<tr><th></th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>
+<tr><td>Day chroma</td><td>White/Black¹</td><td>Green</td><td>Yellow</td>
+    <td>Orange</td><td>Red</td><td>Blue</td><td>Purple</td></tr>
+<tr><td>Night luma</td><td>Alpha</td><td>Beta</td><td>—</td><td>Gamma</td>
+    <td>Delta</td><td>Epsilon</td><td>—</td></tr>
+</table></div>
+<p class="sub">¹ In resolved (<code>costar.dayChroma</code>) form, Sunday is
+<code>Black</code>; the dual "White/Black" form appears in
+<code>transitions.dayChroma</code>.</p>
+
+<h2>Transitions vs. resolved values</h2>
+<p>The calendar's signature idea is the <strong>octave</strong>: boundaries
+belong to both sides. A Sunday is day 8 of one spiral week <em>and</em> day 1
+of the next; the White/Black lunation ends one spiral year <em>and</em> begins
+the next. The API gives you both readings of every day:</p>
+<ul>
+<li><code>transitions.*</code> — the traditional slash notation, exactly as the
+calendar writes it: <code>"24/25"</code>, <code>"Delta/Epsilon/Alpha"</code>,
+<code>"Purple/White/Black"</code>. Strings, verbatim, slashes preserved.</li>
+<li><code>costar.*</code> — <em>resolved</em> single values (internally "CD"
+values), where every overlap is decided by a pivot rule: rotundum/SY pivot on
+the Southern Solstice day, lunations pivot on the new-moon day (White/Black
+splits into <code>White</code> before the solstice, <code>Black</code> from it),
+weeks pivot on Sunday, and the Epsilon/Alpha week splits into
+<code>Epsilon</code> before the new moon and <code>Alpha</code> from it.</li>
+</ul>
+<p>The canonical <code>costarDate</code> string is built from resolved values:
+<code>R{rotundum} SY{spiralYear} {lunation} {weekLuma} {dayChroma}</code> —
+e.g. <code>R1 SY1 Red Beta Yellow</code>. Reverse lookup
+(<code>/v1/costar/…</code>) matches these resolved values only.</p>
+
+<h2>Day object fields</h2>
+<p>Every day/range/month/year response is built from these blocks. The right
+column names the source column in the golden CSV (retrievable verbatim with
+<code>?raw=1</code>).</p>
+
+<h3>Top level</h3>
+<div class="tw"><table>
+<tr><th>Field</th><th>Meaning</th><th>CSV source</th></tr>
+<tr><td><code>date</code></td><td>ISO Gregorian date, Pacific Time reckoning</td><td>Gregorian PT Date</td></tr>
+<tr><td><code>costarDate</code></td><td>Canonical COSTAR date string (resolved values)</td><td>COSTAR Date</td></tr>
+<tr><td><code>lunationStarting</code></td><td>Name of the lunation beginning this day (new-moon days only), else <code>null</code></td><td>Lunation Starting</td></tr>
+</table></div>
+
+<h3><code>costar</code> — resolved calendar position</h3>
+<div class="tw"><table>
+<tr><th>Field</th><th>Meaning</th><th>CSV source</th></tr>
+<tr><td><code>rotundum</code></td><td>Integer, may be negative pre-R0</td><td>CD Rotundum</td></tr>
+<tr><td><code>qLuma</code></td><td>Quinquennium luma</td><td>CD Q Luma</td></tr>
+<tr><td><code>spiralYear</code></td><td>1–25</td><td>CD SY</td></tr>
+<tr><td><code>syLuma</code></td><td>Spiral-year luma; <code>"Epsilon/Alpha"</code> is itself a single value for SY 5/9/13/17/21</td><td>CD SY Luma</td></tr>
+<tr><td><code>lunation</code></td><td>Resolved lunation (<code>White</code> or <code>Black</code>, never <code>White/Black</code>)</td><td>CD Lunation</td></tr>
+<tr><td><code>weekLuma</code></td><td>Resolved week luma (<code>Epsilon</code> or <code>Alpha</code> in the new-moon week)</td><td>CD Week Luma</td></tr>
+<tr><td><code>dayChroma</code></td><td>Resolved chroma; Sunday is <code>Black</code></td><td>CD Day Chroma</td></tr>
+<tr><td><code>nightLuma</code></td><td>Alpha/Beta/Gamma/Delta/Epsilon or <code>null</code> (Tue, Sat)</td><td>Night Luma</td></tr>
+<tr><td><code>weekNumber</code></td><td>Spiral-week count; week 0 starts the Sunday on or before the Southern Solstice</td><td>Week Number</td></tr>
+<tr><td><code>weekdayNumber</code></td><td>1 = Sunday … 7 = Saturday</td><td>Weekday Number</td></tr>
+</table></div>
+
+<h3><code>transitions</code> — slash-notation strings, verbatim</h3>
+<p><code>rotundum</code>, <code>qLuma</code>, <code>sy</code>,
+<code>syLuma</code>, <code>lunation</code>, <code>weekLuma</code>,
+<code>dayChroma</code> — from the seven "Transitions …" CSV columns. During
+overlap periods these hold both readings joined by <code>/</code>
+(e.g. <code>"24/25"</code> throughout a White/Black lunation).</p>
+
+<h3><code>specials</code> — alignment days</h3>
+<div class="tw"><table>
+<tr><th>Field</th><th>Meaning</th><th>CSV source</th></tr>
+<tr><td><code>chroma</code></td><td><code>"Double [color]"</code> when the day's chroma matches its lunation's color, else <code>null</code></td><td>Chroma Special</td></tr>
+<tr><td><code>luma</code></td><td><code>"Double…"</code> through <code>"Quintuple [luma]"</code> as the same luma aligns across more of: Q luma, SY luma, lunation, week luma, night luma; else <code>null</code>. Served precomputed — the exact matching rules are intricate and adjudicated.</td><td>Luma Special</td></tr>
+</table></div>
+
+<h3><code>phase</code> — lunar position</h3>
+<div class="tw"><table>
+<tr><th>Field</th><th>Meaning</th><th>CSV source</th></tr>
+<tr><td><code>dayNumber</code></td><td>Days since the last new moon (0 on new-moon days)</td><td>Phase Day Number</td></tr>
+<tr><td><code>brownLunation</code></td><td>Brown Lunation Number (lunation 1 began 17 Jan 1923)</td><td>Brown Lunation</td></tr>
+<tr><td><code>lunationNumber</code></td><td>Brown Lunation rebased so the first new moon of 2000 = 0</td><td>Lunation Number</td></tr>
+<tr><td><code>event</code></td><td><code>null</code>, or on phase days: <code>name</code> (New Moon / First Quarter / Full Moon / Last Quarter), <code>number</code> (1–4), <code>timePT</code>, and a <code>utc</code> block (<code>weekday</code>, ISO <code>date</code>, <code>time</code>) for the same instant in UTC</td><td>Phase Name / Number / PT Time / UTC columns</td></tr>
+</table></div>
+
+<h3><code>solar</code> — solar terms</h3>
+<p><code>null</code> except on the 12 days per year when the Sun reaches a
+multiple of 30° celestial longitude: then <code>term</code> (0, 30, … 330),
+<code>event</code> (<code>"Southern Solstice"</code>, <code>"Northward
+Equinox"</code>, <code>"Northern Solstice"</code>, <code>"Southward
+Equinox"</code>, or <code>null</code> for the eight cross-quarter terms),
+<code>timePT</code>, and a <code>utc</code> block. From the Solar Term /
+Solstice or Equinox / Solar UTC columns.</p>
+
+<h3><code>gregorian</code> — conventional reckoning</h3>
+<div class="tw"><table>
+<tr><th>Field</th><th>Meaning</th><th>CSV source</th></tr>
+<tr><td><code>weekday</code></td><td>Full weekday name</td><td>Weekday</td></tr>
+<tr><td><code>displayDate</code></td><td>The calendar's display form, e.g. <code>21 Jul 2026</code></td><td>Gregorian PT Date</td></tr>
+<tr><td><code>dayOfYear</code></td><td>1–366</td><td>Gregorian Day Number</td></tr>
+<tr><td><code>julian</code></td><td>Julian Date at noon UT</td><td>Julian</td></tr>
+<tr><td><code>timezone</code></td><td><code>PST</code> or <code>PDT</code> on that day</td><td>PST/PDT</td></tr>
+</table></div>
+
+<h3><code>meta</code> — on every response</h3>
+<p><code>apiVersion</code> (always <code>"v1"</code>), <code>datasetVersion</code>
+(the golden dataset's generation date — compare with <a href="/v1/meta">/v1/meta</a>
+to detect stale caches), <code>docs</code>. Also sent as the
+<code>X-Dataset-Version</code> response header.</p>
+
+<h2>Event index objects</h2>
+<ul>
+<li><code>/v1/events/phases/{year}</code> — <code>date</code>, <code>name</code>,
+<code>number</code>, <code>timePT</code>, <code>utc</code>,
+<code>costarDate</code>, <code>lunationNumber</code> per phase event.</li>
+<li><code>/v1/events/solar-terms/{year}</code> — <code>date</code>,
+<code>term</code>, <code>event</code>, <code>timePT</code>, <code>utc</code>,
+<code>costarDate</code> per term (12 per year).</li>
+<li><code>/v1/events/lunations/{year}</code> — <code>date</code>,
+<code>lunation</code>, <code>timePT</code>, <code>lunationNumber</code>,
+<code>brownLunation</code>, <code>costarDate</code> per lunation start
+(new moon).</li>
+<li><code>/v1/events/shen</code> — every Shen occurrence in the dataset:
+<code>lunations</code> (13th-lunation years) and <code>weeks</code>
+(<code>startSunday</code> of each Shen week).</li>
+</ul>
+
+<div class="note"><p><strong>Practical notes.</strong> All dates are Pacific
+Time days — <code>/v1/today</code> turns over at midnight Pacific, and a phase
+that falls on, say, July 21 PT may be July 22 in UTC (the <code>utc</code>
+blocks give the same instants in UTC). Coverage is 2000-11-18 through
+2051-01-12; ranges that stick out are clipped and flagged
+<code>"clipped": true</code>. Data changes only by adjudication — rulings on
+the calendar's rules — and every change bumps <code>datasetVersion</code>; see
+the <a href="https://github.com/nfrhtp/COSTAR-Calendar-API/blob/main/CHANGELOG.md">changelog</a>.</p></div>
+
+<p><a href="/">← Back to endpoints</a></p>
+</body>
+</html>

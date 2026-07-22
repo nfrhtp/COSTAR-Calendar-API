@@ -94,6 +94,19 @@ check("dataset.json holds every day in order",
 check("dataset.csv is byte-identical to the source golden CSV",
       (PUB / "v1/dataset.csv").read_bytes() == src.read_bytes())
 
+# Documentation artifacts.
+spec = load("v1/openapi.json")
+check("openapi.json parses and declares 3.1", spec["openapi"].startswith("3.1"))
+for p in ["/v1/today", "/v1/day/{date}", "/v1/range/{start}/{end}",
+          "/v1/month/{month}", "/v1/year/{year}", "/v1/events/shen",
+          "/v1/costar/{rotundum}/{spiralYear}/{lunation}/{weekLuma}/{dayChroma}",
+          "/v1/dataset.csv", "/v1/dataset.json", "/v1/meta"]:
+    check(f"openapi covers {p}", p in spec["paths"])
+check("reference page shipped", (PUB / "reference.html").exists())
+check("landing page links reference + openapi",
+      all(s in (PUB / "index.html").read_text(encoding="utf-8")
+          for s in ["reference.html", "/v1/openapi.json", "CHANGELOG.md"]))
+
 print()
 if failures:
     sys.exit(f"{len(failures)} check(s) failed")

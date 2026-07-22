@@ -235,10 +235,13 @@ def main():
     }
     write_json(out / "v1/meta.json", meta)
 
-    # Static shell (docs page, headers)
+    # Static shell (docs pages, headers); openapi.json lives under /v1/
     static_dir = Path(__file__).resolve().parent.parent / "static"
     for item in static_dir.iterdir():
-        shutil.copyfile(item, out / item.name)
+        if item.name == "openapi.json":
+            shutil.copyfile(item, out / "v1/openapi.json")
+        else:
+            shutil.copyfile(item, out / item.name)
 
     print(f"Built {len(days)} days ({dates[0]} .. {dates[-1]}) into {out}/")
     print(f"datasetVersion={meta['datasetVersion']} sha256={sha[:12]}…")

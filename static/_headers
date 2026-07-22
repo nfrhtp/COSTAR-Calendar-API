@@ -12,5 +12,8 @@
 /v1/meta.json
   Cache-Control: public, max-age=3600
 
+/v1/openapi.json
+  Cache-Control: public, max-age=3600
+
 /v1/data/*
   Cache-Control: public, max-age=3600
