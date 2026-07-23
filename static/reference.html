@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>COSTAR Calendar API — Field Reference</title>
+<script src="/moon-phase.js"></script>
 <style>
   :root { color-scheme: light dark;
     --fg: #1d1d1f; --bg: #fffdf8; --muted: #6b6b70; --line: #e4e0d6;
@@ -11,9 +12,18 @@
   @media (prefers-color-scheme: dark) { :root {
     --fg: #e8e6e1; --bg: #17161a; --muted: #9b98a3; --line: #34323b;
     --accent: #b79fd6; --code-bg: #232128; } }
+  /* day-signature moon-phase background (ruled 2026-07-23): when
+     moon-phase.js is active it supersedes the OS color scheme */
+  :root[data-moon-ink] { --bg: hsl(0 0% calc(var(--moon) * 100%));
+    --line: rgba(127, 127, 127, .35); --code-bg: rgba(127, 127, 127, .16); }
+  :root[data-moon-ink="black"] { --fg: #1d1d1f; --muted: #56565c;
+    --accent: #7a5c9e; }
+  :root[data-moon-ink="white"] { --fg: #e8e6e1; --muted: #a5a2ac;
+    --accent: #b79fd6; }
   body { margin: 0 auto; max-width: 50rem; padding: 2.5rem 1.25rem 5rem;
     font: 16px/1.6 "Baskerville", "Libre Baskerville", Georgia, serif;
-    color: var(--fg); background: var(--bg); }
+    color: var(--fg); background: var(--bg);
+    transition: background-color .6s, color .6s; }
   h1 { font-weight: 500; letter-spacing: .02em; margin-bottom: .25rem; }
   h2 { font-weight: 500; margin-top: 2.5rem; border-bottom: 1px solid var(--line);
     padding-bottom: .3rem; }
