@@ -3,10 +3,12 @@
 // regenerate there and re-copy. Data: canonical golden calendar CSV
 // (2000-11-25 … 2051-01-12, 1241 new/full moon events, PT dates).
 //
-// Contract (ruled 2026-07-23): sets on <html> the CSS custom property
-// `--moon` (0 = new-moon black … 1 = full-moon white) and the attribute
+// Contract (ruled 2026-07-23): sets on <html> the CSS custom properties
+// `--moon` (0 = new-moon black … 1 = full-moon white) and `--moon-bg`
+// (the day's background as a ready-made rgb() color — use this where a
+// CSS pipeline rejects calc() inside color functions), plus the attribute
 // `data-moon-ink` ("white" when --moon < 0.5, else "black"). Site
-// stylesheets map those two signals onto their palettes. The value changes
+// stylesheets map these signals onto their palettes. The value changes
 // at 00:01 PT (the calendar's native day boundary, +1 min). Preview with
 // ?moon=0.25 (any 0..1) in the URL. No network calls; no dependencies.
 (function () {
@@ -69,10 +71,13 @@
     var root = document.documentElement;
     if (v === null) { // outside dataset: leave site defaults untouched
       root.style.removeProperty("--moon");
+      root.style.removeProperty("--moon-bg");
       root.removeAttribute("data-moon-ink");
       return;
     }
+    var g = Math.round(v * 255);
     root.style.setProperty("--moon", v.toFixed(4));
+    root.style.setProperty("--moon-bg", "rgb(" + g + "," + g + "," + g + ")");
     root.setAttribute("data-moon-ink", v < 0.5 ? "white" : "black");
   }
 
