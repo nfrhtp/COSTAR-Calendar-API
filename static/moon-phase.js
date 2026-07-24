@@ -10,7 +10,8 @@
 // `data-moon-ink` ("white" when --moon < 0.5, else "black"). Site
 // stylesheets map these signals onto their palettes. The value changes
 // at 00:01 PT (the calendar's native day boundary, +1 min). Preview with
-// ?moon=0.25 (any 0..1) in the URL. No network calls; no dependencies.
+// ?moon=D in the URL, where D is a phase day 0-29 (0 = New Moon,
+// 15 = Full Moon; 16-29 mirror the waxing days). No network calls.
 (function () {
   var EPOCH = Date.UTC(2000, 10, 25); // first event date (PT), as UTC days
   var FIRST_TYPE = "N";        // "N" new or "F" full
@@ -59,10 +60,16 @@
   }
 
   function overrideValue() {
+    // ?moon=D — phase day 0-29 on the nominal 30-day wheel (Kevin,
+    // 2026-07-23): 0 = New Moon, 15 = Full Moon, 16-29 mirror the waxing
+    // days. Converted to brightness via the same cosine illumination.
     var m = (location.search + location.hash).match(/[?&#]moon=([0-9.]+)/);
     if (!m) return null;
-    var v = parseFloat(m[1]);
-    return isNaN(v) ? null : Math.max(0, Math.min(1, v));
+    var d = parseFloat(m[1]);
+    if (isNaN(d)) return null;
+    d = Math.max(0, Math.min(29, d));
+    if (d > 15) d = 30 - d;
+    return (1 - Math.cos(2 * Math.PI * d / 30)) / 2;
   }
 
   function apply() {
