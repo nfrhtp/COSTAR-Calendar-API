@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>COSTAR Calendar API — Field Reference</title>
 <script src="/moon-phase.js"></script>
+<script src="/moon-palette.js"></script>
 <style>
   :root { color-scheme: light dark;
     --fg: #1d1d1f; --bg: #fffdf8; --muted: #6b6b70; --line: #e4e0d6;
@@ -15,11 +16,12 @@
   /* day-signature moon-phase background (ruled 2026-07-23): when
      moon-phase.js is active it supersedes the OS color scheme */
   :root[data-moon-ink] { --bg: var(--moon-bg);
-    --line: rgba(127, 127, 127, .35); --code-bg: rgba(127, 127, 127, .16); }
-  :root[data-moon-ink="black"] { --fg: #1d1d1f; --muted: #56565c;
-    --accent: #7a5c9e; }
-  :root[data-moon-ink="white"] { --fg: #e8e6e1; --muted: #a5a2ac;
-    --accent: #b79fd6; }
+    --line: var(--ds-rule, rgba(127, 127, 127, .35));
+    --code-bg: rgba(127, 127, 127, .16); }
+  :root[data-moon-ink="black"] { --fg: var(--ds-all, #1d1d1f);
+    --muted: var(--ds-muted, #56565c); --accent: var(--ds-link, #7a5c9e); }
+  :root[data-moon-ink="white"] { --fg: var(--ds-all, #e8e6e1);
+    --muted: var(--ds-muted, #a5a2ac); --accent: var(--ds-link, #b79fd6); }
   body { margin: 0 auto; max-width: 50rem; padding: 2.5rem 1.25rem 5rem;
     font: 16px/1.6 "Baskerville", "Libre Baskerville", Georgia, serif;
     color: var(--fg); background: var(--bg);
