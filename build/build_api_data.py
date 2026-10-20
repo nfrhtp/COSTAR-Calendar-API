@@ -10,6 +10,7 @@ COSTAR-Calendar-Generator repo) and emits everything the Worker serves:
     public/v1/data/events/solar-terms/<year>.json
     public/v1/data/events/lunations/<year>.json
     public/v1/data/events/shen.json
+    public/v1/data/next/<kind>.json       sorted ISO dates per "next" kind
     public/v1/data/costar-index.json      COSTAR date string -> [ISO dates]
     public/v1/dataset.csv                 verbatim copy of the golden CSV
     public/v1/dataset.json                all structured day objects, in date order
@@ -32,6 +33,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 API_VERSION = "v1"
+
+# Kinds served by /v1/next/{kind}: each is a pure selection over the
+# structured day object, mirroring static/answers.js in the COSTAR-Date repo
+# (the site's own "next ..." questions), so the two must stay in agreement.
+# "triple-luma" is any Triple-or-stronger luma alignment (Triple, Quadruple,
+# Quintuple), which is what the site calls a Triple Luma night.
+NEXT_KINDS = {
+    "triple-luma": lambda o: re.match(
+        r"^(Triple|Quadruple|Quintuple)\b", o["specials"]["luma"] or "") is not None,
+    "full-moon": lambda o: (o["phase"]["event"] or {}).get("name") == "Full Moon",
+    "new-moon": lambda o: o["lunationStarting"] is not None,
+    "shen-week": lambda o: (o["costar"]["weekLuma"] == "Shen"
+                            and o["costar"]["weekdayNumber"] == 1),
+    "shen-lunation": lambda o: o["lunationStarting"] == "Shen",
+    "solar-event": lambda o: bool(o["solar"] and o["solar"]["event"]),
+    "spiral-year": lambda o: bool(o["solar"]
+                                  and o["solar"]["event"] == "Southern Solstice"),
+}
 
 EXPECTED_COLUMNS = [
     "Gregorian PT Date", "Weekday", "Phase Name", "Phase PT Time",
@@ -207,6 +226,11 @@ def main():
             shen_weeks.append({"startSunday": date, "costarDate": obj["costarDate"]})
     write_json(out / "v1/data/events/shen.json",
                {"lunations": shen_lunations, "weeks": shen_weeks})
+
+    # "Next" indexes: one sorted date list per kind, for /v1/next/{kind}
+    for kind, pred in NEXT_KINDS.items():
+        write_json(out / "v1/data/next" / f"{kind}.json",
+                   {"kind": kind, "dates": [d for d, o, _ in days if pred(o)]})
 
     # Reverse index: canonical COSTAR date string -> ISO dates
     index = {}

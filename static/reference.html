@@ -208,6 +208,30 @@ to detect stale caches), <code>docs</code>. Also sent as the
 (<code>startSunday</code> of each Shen week).</li>
 </ul>
 
+<h2>Next-occurrence objects</h2>
+<p><code>/v1/next/{kind}?from=YYYY-MM-DD&amp;count=N</code> selects the next
+<code>count</code> (1–10, default 1) days of a kind whose date is on or after
+<code>from</code> (default: today, Pacific Time) and returns
+<code>kind</code>, <code>from</code>, <code>count</code> (results returned),
+<code>results</code> — each a full day object, identical to
+<code>/v1/day/{date}</code> — and <code>meta</code>. When fewer than the
+requested count remain in coverage the response carries
+<code>"clipped": true</code>. Nothing is computed: every kind is a selection
+over the day objects, by these rules.</p>
+<div class="tw"><table>
+<tr><th>Kind</th><th>Selects days where</th><th>Read the detail from</th></tr>
+<tr><td><code>triple-luma</code></td><td><code>specials.luma</code> begins with <code>Triple</code>, <code>Quadruple</code>, or <code>Quintuple</code> — a Triple Luma night in the calendar's words</td><td><code>specials.luma</code>, e.g. <code>"Triple Epsilon"</code></td></tr>
+<tr><td><code>full-moon</code></td><td><code>phase.event.name</code> is <code>Full Moon</code></td><td><code>phase.event.timePT</code>, <code>phase.event.utc</code></td></tr>
+<tr><td><code>new-moon</code></td><td><code>lunationStarting</code> is set (the new-moon day, which is also the day a lunation begins)</td><td><code>lunationStarting</code>, <code>phase.event.timePT</code></td></tr>
+<tr><td><code>shen-week</code></td><td><code>costar.weekLuma</code> is <code>Shen</code> and <code>costar.weekdayNumber</code> is 1 (the week's Sunday)</td><td><code>costarDate</code></td></tr>
+<tr><td><code>shen-lunation</code></td><td><code>lunationStarting</code> is <code>Shen</code></td><td><code>costarDate</code></td></tr>
+<tr><td><code>solar-event</code></td><td><code>solar.event</code> is set (a solstice or equinox; the eight cross-quarter terms are skipped)</td><td><code>solar.event</code>, <code>solar.timePT</code></td></tr>
+<tr><td><code>spiral-year</code></td><td><code>solar.event</code> is <code>Southern Solstice</code> — the day the spiral year turns; that day's <code>costar</code> values already belong to the new year</td><td><code>costar.rotundum</code>, <code>costar.spiralYear</code></td></tr>
+</table></div>
+<p class="sub">An unknown kind is a 404; a malformed <code>from</code> or a
+<code>count</code> outside 1–10 is a 400; a <code>from</code> past the end of
+coverage is a 404.</p>
+
 <div class="note"><p><strong>Practical notes.</strong> All dates are Pacific
 Time days — <code>/v1/today</code> turns over at midnight Pacific, and a phase
 that falls on, say, July 21 PT may be July 22 in UTC (the <code>utc</code>

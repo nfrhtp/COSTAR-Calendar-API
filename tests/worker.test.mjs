@@ -102,6 +102,81 @@ test("events: solar terms for 2026 has 12 entries", async () => {
   assert.equal(body.events.length, 12);
 });
 
+function todayPT() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+}
+
+test("next: default from is today (Pacific Time) and the result is a full day record", async () => {
+  const { res, body } = await get("/v1/next/full-moon");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Cache-Control"), "public, max-age=300");
+  assert.equal(body.kind, "full-moon");
+  assert.equal(body.from, todayPT());
+  assert.equal(body.count, 1);
+  assert.equal(body.results.length, 1);
+  assert.ok(body.results[0].date >= body.from);
+  assert.equal(body.results[0].phase.event.name, "Full Moon");
+  assert.equal(body.clipped, undefined);
+  assert.equal(body.meta.apiVersion, "v1");
+  const same = (await get(`/v1/day/${body.results[0].date}`)).body;
+  delete same.meta;
+  assert.deepEqual(body.results[0], same);
+});
+
+test("next: explicit from, on-or-after semantics, each kind's selection", async () => {
+  const triple = (await get("/v1/next/triple-luma?from=2026-10-19")).body;
+  assert.equal(triple.results[0].date, "2026-11-13");
+  assert.equal(triple.results[0].specials.luma, "Triple Epsilon");
+  const sy = (await get("/v1/next/spiral-year?from=2026-10-19")).body;
+  assert.equal(sy.results[0].date, "2026-12-21");
+  assert.equal(sy.results[0].costar.spiralYear, 2);
+  assert.equal(sy.results[0].solar.event, "Southern Solstice");
+  // on-or-after: a from that lands on the event returns that day itself
+  assert.equal((await get("/v1/next/spiral-year?from=2026-12-21")).body.results[0].date, "2026-12-21");
+  const solar = (await get("/v1/next/solar-event?from=2026-10-19")).body;
+  assert.equal(solar.results[0].date, "2026-12-21"); // skips the 2026-11-21 cross-quarter term
+  const nm = (await get("/v1/next/new-moon?from=2026-10-19")).body;
+  assert.equal(nm.results[0].date, "2026-11-08");
+  assert.equal(nm.results[0].lunationStarting, "Purple");
+  const sl = (await get("/v1/next/shen-lunation?from=2026-10-19")).body;
+  assert.equal(sl.results[0].date, "2028-06-22");
+  assert.equal((await get("/v1/next/full-moon?from=2026-10-19")).body.results[0].date, "2026-10-25");
+  assert.equal((await get("/v1/next/full-moon?from=2026-10-19")).res.headers.get("Cache-Control"),
+    "public, max-age=3600");
+});
+
+test("next: count=3 returns three in order (Shen weeks of R1 SY1)", async () => {
+  const { res, body } = await get("/v1/next/shen-week?from=2026-01-01&count=3");
+  assert.equal(res.status, 200);
+  assert.equal(body.count, 3);
+  assert.deepEqual(body.results.map(d => d.date), ["2026-01-11", "2026-05-24", "2026-10-11"]);
+  assert.ok(body.results.every(d => d.costar.weekLuma === "Shen" && d.costar.weekdayNumber === 1));
+});
+
+test("next: fewer than requested near the end of coverage is flagged clipped", async () => {
+  const { res, body } = await get("/v1/next/spiral-year?from=2050-01-01&count=5");
+  assert.equal(res.status, 200);
+  assert.equal(body.count, 1);
+  assert.equal(body.clipped, true);
+  assert.equal(body.results[0].date, "2050-12-21");
+});
+
+test("next: bad kind is 404, bad from/count are 400, past coverage is 404", async () => {
+  const bad = await get("/v1/next/blue-moon");
+  assert.equal(bad.res.status, 404);
+  assert.ok(bad.body.hint.includes("triple-luma"));
+  assert.equal((await get("/v1/next/full-moon?from=2026-13-01")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?from=soon")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?count=0")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?count=11")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?count=2.5")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?count=three")).res.status, 400);
+  assert.equal((await get("/v1/next/full-moon?from=2052-01-01")).res.status, 404);
+  assert.equal((await get("/v1/next")).res.status, 404);
+});
+
 test("reverse lookup finds the R0 opening solstice, case-insensitively", async () => {
   const { body } = await get("/v1/costar/r0/sy1/black/delta/red");
   assert.equal(body.costarDate, "R0 SY1 Black Delta Red");

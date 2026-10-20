@@ -22,7 +22,8 @@ by the generator repo's `CLAUDE.md` and specifications.
   `datasetVersion`). Replace only with a golden CSV that passed all five
   generator test suites.
 - `build/build_api_data.py` — golden CSV → `public/` static assets
-  (per-year structured + raw day trees, event indexes, reverse index, bulk
+  (per-year structured + raw day trees, event indexes, per-kind "next"
+  indexes, reverse index, bulk
   datasets, meta). `public/` is generated and gitignored; never hand-edit it.
 - `static/` — docs landing page and `_headers`, copied into `public/` by the
   build.

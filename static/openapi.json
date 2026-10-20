@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "COSTAR Calendar API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "summary": "Read-only JSON access to the COSTAR calendar, 2000–2051.",
     "description": "Daily COSTAR date strings, lumas, chromas, lunations, lunar phases, and solar events, served from a pregenerated golden dataset. No authentication. All dates are Pacific Time days (the calendar's native zone). Field semantics: https://api.costar.date/reference.html",
     "contact": { "url": "https://github.com/nfrhtp/COSTAR-Calendar-API" },
@@ -164,6 +164,35 @@
                 "meta": { "$ref": "#/components/schemas/MetaStamp" }
               } } } }
           }
+        }
+      }
+    },
+    "/v1/next/{kind}": {
+      "get": {
+        "operationId": "getNext",
+        "summary": "The next occurrence(s) of a kind of day, on or after a date",
+        "description": "Selects, from the pregenerated data, the next `count` days of the given kind whose date is on or after `from` (default: today in Pacific Time). Each result is the full day object exactly as /v1/day/{date} returns it. Kinds: triple-luma (a Triple, Quadruple, or Quintuple luma special — specials.luma tells which), full-moon, new-moon (also the start of a lunation — lunationStarting names it), shen-week (the Sunday starting a Shen week), shen-lunation (the new-moon day starting a Shen lunation), solar-event (a solstice or equinox day, not the cross-quarter terms), spiral-year (the Southern Solstice day on which the spiral year turns; its costar values already belong to the new year). When fewer than `count` remain in coverage the response is flagged clipped.",
+        "parameters": [
+          { "name": "kind", "in": "path", "required": true, "schema": { "type": "string", "enum": ["triple-luma", "full-moon", "new-moon", "shen-week", "shen-lunation", "solar-event", "spiral-year"] } },
+          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Earliest date to consider, inclusive. Default: today, Pacific Time." },
+          { "name": "count", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 10, "default": 1 }, "description": "How many occurrences to return (1–10)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next occurrences, in date order",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "properties": {
+                "kind": { "type": "string" },
+                "from": { "type": "string", "format": "date" },
+                "count": { "type": "integer", "description": "Number of results returned" },
+                "clipped": { "type": "boolean", "description": "Present (true) only when fewer than the requested count remain in coverage" },
+                "results": { "type": "array", "items": { "$ref": "#/components/schemas/Day" } },
+                "meta": { "$ref": "#/components/schemas/MetaStamp" }
+              } } } }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },

@@ -66,6 +66,7 @@ subscription feed</a>. No authentication, no keys — just fetch.</p>
 <tr><td><code>/v1/events/solar-terms/2026</code></td><td>The 12 major solar terms (incl. solstices/equinoxes)</td></tr>
 <tr><td><code>/v1/events/lunations/2026</code></td><td>Lunation starts (new moons) for a year</td></tr>
 <tr><td><code>/v1/events/shen</code></td><td>Every Shen lunation and Shen week in the dataset</td></tr>
+<tr><td><code>/v1/next/full-moon?from=2026-10-19&amp;count=3</code></td><td>The next occurrence(s) of a kind of day, on or after a date (default today), each as a full day object. Kinds: <code>triple-luma</code>, <code>full-moon</code>, <code>new-moon</code>, <code>shen-week</code>, <code>shen-lunation</code>, <code>solar-event</code>, <code>spiral-year</code></td></tr>
 <tr><td><code>/v1/costar/R1/SY1/Red/Gamma/Yellow</code></td><td>Reverse lookup: COSTAR date → Gregorian date(s)</td></tr>
 <tr><td><code>/v1/dataset.csv</code> · <code>/v1/dataset.json</code></td><td>The full dataset in bulk</td></tr>
 <tr><td><code>/v1/meta</code></td><td>Coverage, dataset version, source checksum</td></tr>

@@ -9,6 +9,7 @@ Worker at **https://api.costar.date/**.
 curl https://api.costar.date/v1/today
 curl https://api.costar.date/v1/day/2026-07-21
 curl https://api.costar.date/v1/costar/R1/SY1/Red/Gamma/Yellow
+curl "https://api.costar.date/v1/next/full-moon?count=3"
 ```
 
 Documentation (all served by the API itself, sources in `static/`):

@@ -85,6 +85,67 @@ lun2033 = load("v1/data/events/lunations/2033.json")["events"]
 check("2033 lunation index includes Shen",
       any(e["lunation"] == "Shen" and e["date"] == "2033-10-23" for e in lun2033))
 
+# "Next" indexes (/v1/next/{kind}): non-empty, sorted, every date is a day,
+# and each matches its selection rule (mirrors static/answers.js in COSTAR-Date).
+all_days = {}
+for year_file in sorted((PUB / "v1/data/years").glob("*.json")):
+    all_days.update(load(f"v1/data/years/{year_file.name}")["days"])
+NEXT_KINDS = ["triple-luma", "full-moon", "new-moon", "shen-week",
+              "shen-lunation", "solar-event", "spiral-year"]
+next_idx = {}
+for kind in NEXT_KINDS:
+    idx = load(f"v1/data/next/{kind}.json")
+    dates = idx["dates"]
+    next_idx[kind] = dates
+    check(f"next/{kind}: kind field and non-empty", idx["kind"] == kind and len(dates) > 0)
+    check(f"next/{kind}: strictly sorted", all(a < b for a, b in zip(dates, dates[1:])))
+    check(f"next/{kind}: every date is a day record", all(d in all_days for d in dates))
+
+
+def first_on_or_after(kind, date):
+    return next((d for d in next_idx[kind] if d >= date), None)
+
+
+check("next/triple-luma: every entry is a Triple/Quadruple/Quintuple luma special",
+      all((all_days[d]["specials"]["luma"] or "").split(" ")[0]
+          in ("Triple", "Quadruple", "Quintuple") for d in next_idx["triple-luma"]))
+check("next/full-moon: every entry is a Full Moon phase day",
+      all((all_days[d]["phase"]["event"] or {}).get("name") == "Full Moon"
+          for d in next_idx["full-moon"]))
+check("next/new-moon: entries are exactly the lunation-start days",
+      next_idx["new-moon"] == [d for d, o in all_days.items() if o["lunationStarting"]])
+check("next/new-moon: entries are exactly the New Moon phase days",
+      next_idx["new-moon"] == [d for d, o in all_days.items()
+                               if o["phase"]["event"] and o["phase"]["event"]["number"] == 1])
+check("next/shen-week: entries are exactly the Shen weeks' startSunday values",
+      next_idx["shen-week"] == [w["startSunday"] for w in shen["weeks"]])
+check("next/shen-lunation: entries are exactly the Shen lunation starts",
+      next_idx["shen-lunation"] == [l["date"] for l in shen["lunations"]])
+check("next/solar-event: every entry is a solstice or equinox day",
+      all(all_days[d]["solar"] and all_days[d]["solar"]["event"]
+          for d in next_idx["solar-event"]))
+check("next/spiral-year: every entry is a Southern Solstice day",
+      all(all_days[d]["solar"] and all_days[d]["solar"]["event"] == "Southern Solstice"
+          for d in next_idx["spiral-year"]))
+sorted_dates = sorted(all_days)
+prev_of = {b: a for a, b in zip(sorted_dates, sorted_dates[1:])}
+check("next/spiral-year: CD SY changes on every entry, and only there",
+      [d for d in sorted_dates[1:]
+       if all_days[d]["costar"]["spiralYear"] != all_days[prev_of[d]]["costar"]["spiralYear"]]
+      == next_idx["spiral-year"])
+# Spot checks (values confirmed via the live API by the costar.date site, 2026-10-20).
+check("next Triple Luma on or after 2026-10-19 is 2026-11-13",
+      first_on_or_after("triple-luma", "2026-10-19") == "2026-11-13")
+check("Shen weeks of R1 SY1 start 2026-01-11, 2026-05-24, 2026-10-11",
+      [d for d in next_idx["shen-week"] if all_days[d]["costarDate"].startswith("R1 SY1 ")]
+      == ["2026-01-11", "2026-05-24", "2026-10-11"])
+check("next spiral year on or after 2026-10-19 begins 2026-12-21",
+      first_on_or_after("spiral-year", "2026-10-19") == "2026-12-21")
+check("next full moon on or after 2026-10-19 is 2026-10-25",
+      first_on_or_after("full-moon", "2026-10-19") == "2026-10-25")
+check("next Shen lunation on or after 2026-10-19 begins 2028-06-22",
+      first_on_or_after("shen-lunation", "2026-10-19") == "2028-06-22")
+
 # Bulk artifacts.
 dataset = load("v1/dataset.json")["days"]
 check("dataset.json holds every day in order",
@@ -99,6 +160,7 @@ spec = load("v1/openapi.json")
 check("openapi.json parses and declares 3.1", spec["openapi"].startswith("3.1"))
 for p in ["/v1/today", "/v1/day/{date}", "/v1/range/{start}/{end}",
           "/v1/month/{month}", "/v1/year/{year}", "/v1/events/shen",
+          "/v1/next/{kind}",
           "/v1/costar/{rotundum}/{spiralYear}/{lunation}/{weekLuma}/{dayChroma}",
           "/v1/dataset.csv", "/v1/dataset.json", "/v1/meta"]:
     check(f"openapi covers {p}", p in spec["paths"])

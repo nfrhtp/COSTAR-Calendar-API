@@ -10,6 +10,11 @@
 
 const DOCS = "https://api.costar.date/";
 const MAX_RANGE_DAYS = 400;
+const MAX_NEXT_COUNT = 10;
+// Kinds of /v1/next/{kind}; each has a pregenerated sorted date index at
+// /v1/data/next/{kind}.json (see build/build_api_data.py NEXT_KINDS).
+const NEXT_KINDS = ["triple-luma", "full-moon", "new-moon", "shen-week",
+  "shen-lunation", "solar-event", "spiral-year"];
 const DAY_MS = 86400000;
 
 let cachedMeta = null;
@@ -54,6 +59,9 @@ export default {
         return range(env, request, meta, `${rest[1]}-01-01`, `${rest[1]}-12-31`, raw);
       }
       if (rest[0] === "events") return events(env, request, meta, rest.slice(1));
+      if (rest[0] === "next" && rest.length === 2) {
+        return next(env, request, meta, rest[1], url.searchParams);
+      }
       if (rest[0] === "costar") return costarLookup(env, request, meta, rest.slice(1));
       return err(404, "Unknown endpoint.", endpointHint());
     } catch (e) {
@@ -129,6 +137,48 @@ async function events(env, request, meta, rest) {
     "and /v1/events/shen.");
 }
 
+async function next(env, request, meta, kind, params) {
+  if (!NEXT_KINDS.includes(kind)) {
+    return err(404, `Unknown kind "${kind}".`,
+      `Kinds: ${NEXT_KINDS.join(", ")} — e.g. /v1/next/full-moon?from=2026-10-19&count=3.`);
+  }
+  const fromParam = params.get("from");
+  const from = fromParam === null ? todayPT() : validDate(fromParam);
+  if (!from) return err(400, `Not a valid ISO date: "${fromParam}". Use from=YYYY-MM-DD.`);
+  const countParam = params.get("count");
+  const count = countParam === null ? 1 : Number(countParam);
+  if (!/^\d+$/.test(countParam ?? "1") || count < 1 || count > MAX_NEXT_COUNT) {
+    return err(400, `count must be an integer from 1 to ${MAX_NEXT_COUNT} (got "${countParam}").`);
+  }
+  if (from > meta.coverage.end) {
+    return err(404, `${from} is outside dataset coverage ` +
+      `(${meta.coverage.start} to ${meta.coverage.end}).`);
+  }
+  const index = await loadJSON(env, request, `/v1/data/next/${kind}.json`);
+  const dates = index.dates;
+  // Binary search: first index date >= from.
+  let lo = 0, hi = dates.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (dates[mid] < from) lo = mid + 1; else hi = mid;
+  }
+  const picked = dates.slice(lo, lo + count);
+  const files = {};
+  const results = [];
+  for (const d of picked) {
+    const y = d.slice(0, 4);
+    files[y] ??= await loadJSON(env, request, `/v1/data/years/${y}.json`);
+    const obj = files[y]?.days?.[d];
+    if (obj) results.push(obj);
+  }
+  const body = {
+    kind, from, count: results.length,
+    clipped: results.length < count || undefined,
+    results, meta: metaStamp(meta),
+  };
+  return json(body, fromParam === null ? 300 : 3600, meta);
+}
+
 async function costarLookup(env, request, meta, rest) {
   if (rest.length !== 5) {
     return err(400, "Reverse lookup takes 5 segments: " +
@@ -183,6 +233,7 @@ function todayPT() {
 function validDate(s) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return null;
   return d.toISOString().slice(0, 10) === s ? s : null;
 }
 
@@ -224,6 +275,7 @@ function err(status, message, hint) {
 
 function endpointHint() {
   return "Endpoints: /v1/today, /v1/day/{date}, /v1/range/{start}/{end}, " +
-    "/v1/month/{yyyy-mm}, /v1/year/{yyyy}, /v1/events/…, /v1/costar/…, " +
+    "/v1/month/{yyyy-mm}, /v1/year/{yyyy}, /v1/events/…, /v1/next/{kind}, " +
+    "/v1/costar/…, " +
     "/v1/dataset.csv, /v1/dataset.json, /v1/meta.";
 }

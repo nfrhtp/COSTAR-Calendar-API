@@ -7,6 +7,20 @@ a ruling on the calendar's rules by its keeper — never silently.
 Format per entry: API changes (endpoints/payloads, additive-only within v1)
 and dataset changes (golden CSV regenerations) listed separately.
 
+## 2026-10-20 — `/v1/next/{kind}` · dataset 2026-07-05 (unchanged)
+
+- **API**: Added `/v1/next/{kind}` (additive; approved by Kevin 2026-10-20) —
+  the next `count` (1–10, default 1) days of a kind on or after `from`
+  (default: today in Pacific Time), each returned as the full day object
+  that `/v1/day/{date}` gives. Kinds: `triple-luma`, `full-moon`, `new-moon`,
+  `shen-week`, `shen-lunation`, `solar-event`, `spiral-year`; the selection
+  rules are on the reference page. Each kind is a pregenerated sorted date
+  index (`build/build_api_data.py`); the Worker only searches it and
+  assembles existing day records. Unknown kind → 404; bad `from`/`count` →
+  400. Also fixed: an unparsable month or day in any date segment
+  (e.g. `/v1/day/2026-13-01`) now answers 400 instead of 500.
+- **Dataset**: unchanged (golden CSV generated 2026-07-05).
+
 ## 2026-07-21 — v1 launch · dataset 2026-07-05
 
 - **API**: initial public release at https://api.costar.date/ — day/range/
