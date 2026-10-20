@@ -9,6 +9,10 @@ and dataset changes (golden CSV regenerations) listed separately.
 
 ## 2026-10-20 — `/v1/next/{kind}` · dataset 2026-07-05 (unchanged)
 
+- **API** (later the same day): `/v1/next/{kind}` treats an empty `from=` or `count=` as
+  absent (defaults apply) instead of answering 400 — chatbot tools send every declared
+  parameter and leave unused ones blank.
+
 - **API**: Added `/v1/next/{kind}` (additive; approved by Kevin 2026-10-20) —
   the next `count` (1–10, default 1) days of a kind on or after `from`
   (default: today in Pacific Time), each returned as the full day object

@@ -195,3 +195,11 @@ test("OPTIONS preflight succeeds", async () => {
     new Request("https://api.costar.date/v1/today", { method: "OPTIONS" }), env);
   assert.equal(res.status, 204);
 });
+
+test("/v1/next: empty from= and count= behave as absent", async () => {
+  const a = await get("/v1/next/full-moon?from=&count=");
+  const b = await get("/v1/next/full-moon");
+  assert.equal(a.res.status, 200);
+  assert.deepEqual(a.body.results, b.body.results);
+  assert.equal(a.body.count, 1);
+});

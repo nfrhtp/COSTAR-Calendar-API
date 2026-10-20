@@ -142,10 +142,13 @@ async function next(env, request, meta, kind, params) {
     return err(404, `Unknown kind "${kind}".`,
       `Kinds: ${NEXT_KINDS.join(", ")} — e.g. /v1/next/full-moon?from=2026-10-19&count=3.`);
   }
-  const fromParam = params.get("from");
+  // An empty from= or count= counts as absent: chatbot tools send every
+  // declared parameter and leave the unused ones blank (Chatbase, 2026-10-20).
+  const blank = (v) => v === null || v.trim() === "";
+  const fromParam = blank(params.get("from")) ? null : params.get("from");
   const from = fromParam === null ? todayPT() : validDate(fromParam);
   if (!from) return err(400, `Not a valid ISO date: "${fromParam}". Use from=YYYY-MM-DD.`);
-  const countParam = params.get("count");
+  const countParam = blank(params.get("count")) ? null : params.get("count");
   const count = countParam === null ? 1 : Number(countParam);
   if (!/^\d+$/.test(countParam ?? "1") || count < 1 || count > MAX_NEXT_COUNT) {
     return err(400, `count must be an integer from 1 to ${MAX_NEXT_COUNT} (got "${countParam}").`);
