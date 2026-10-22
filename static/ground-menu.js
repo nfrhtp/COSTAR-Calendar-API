@@ -1,14 +1,19 @@
 // ground-menu.js — day-signature kit: the visitor's ground menu (COSTAR / TLGE).
 // Hand-written (not generated). Requires moon-phase.js on the page first.
 //
-// Kevin, 2026-10-22: a small, neutral icon (deliberately not a moon) that opens a
-// three-line menu — "Follow the moon" (the default), "White", "Black". The choice
+// Kevin, 2026-10-22: small pale text, "shade", in the middle of the header between
+// the logo and the moon (first built as a small neutral icon; Kevin preferred the
+// word, styled like costar.date's pale api/ics links). Clicking it opens a three-line
+// menu — "Follow the moon" (the default), "White", "Black". The choice
 // lasts for the rest of the browser session on that site (moon-phase.js keeps it
 // in a session cookie); the next visit starts on the moon again.
 //
-// Use: costarGroundMenu.mount(parent, before) — inserts the button (and its menu)
-// into `parent`, before `before` (or at the end). Styling is self-contained and
-// uses currentColor and the kit's --moon-bg, so it follows each site's ink.
+// Use: costarGroundMenu.mount(parent, before, options) — inserts the control (and its
+// menu) into `parent`, before `before` (or at the end). options.label: show this text
+// instead of the icon (e.g. "shade"); options.center: center the control horizontally
+// in `parent` (absolutely positioned, so the parent's own layout is untouched).
+// Styling is self-contained and uses currentColor and the kit's --moon-bg, so it
+// follows each site's ink.
 (function () {
   var ITEMS = [["moon", "Follow the moon"], ["white", "White"], ["black", "Black"]];
   var ICON =
@@ -21,6 +26,10 @@
     "width:28px;height:28px;border-radius:6px;opacity:.55;color:inherit;transition:opacity .2s}" +
     ".cg-btn:hover,.cg-btn:focus-visible,.cg-wrap.open .cg-btn{opacity:1}" +
     ".cg-btn:focus-visible{outline:2px solid currentColor;outline-offset:2px}" +
+    ".cg-btn.cg-text{width:auto;height:auto;padding:.15rem .35rem;font-size:.85rem;" +
+    "letter-spacing:.04em;line-height:1.2;opacity:.6}" +
+    ".cg-wrap.cg-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}" +
+    ".cg-wrap.cg-center .cg-menu{right:auto;left:50%;transform:translateX(-50%)}" +
     ".cg-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:1000;min-width:11rem;" +
     "margin:0;padding:.3rem 0;list-style:none;border-radius:8px;" +
     "background:var(--moon-bg,#fff);color:inherit;border:1px solid currentColor;" +
@@ -39,12 +48,16 @@
     document.head.appendChild(s);
   }
 
-  function mount(parent, before) {
+  function mount(parent, before, options) {
+    options = options || {};
     if (!parent || !window.costarGround) return null;
     if (parent.querySelector(".cg-wrap")) return parent.querySelector(".cg-wrap");
     style();
     var wrap = document.createElement("span");
-    wrap.className = "cg-wrap";
+    wrap.className = "cg-wrap" + (options.center ? " cg-center" : "");
+    if (options.center && getComputedStyle(parent).position === "static") {
+      parent.style.position = "relative";
+    }
     var btn = document.createElement("button");
     btn.className = "cg-btn";
     btn.type = "button";
@@ -52,7 +65,14 @@
     btn.setAttribute("aria-label", "Page ground");
     btn.setAttribute("aria-haspopup", "menu");
     btn.setAttribute("aria-expanded", "false");
-    btn.innerHTML = ICON;
+    if (options.label) {
+      btn.className += " cg-text";
+      btn.textContent = options.label;
+      btn.setAttribute("aria-label", options.label);
+      btn.title = options.label;
+    } else {
+      btn.innerHTML = ICON;
+    }
     var menu = document.createElement("ul");
     menu.className = "cg-menu";
     menu.setAttribute("role", "menu");

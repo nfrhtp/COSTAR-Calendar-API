@@ -11,7 +11,8 @@ and dataset changes (golden CSV regenerations) listed separately.
 
 - **Static**: `/moon-phase.js` now honors a visitor's session choice (moon / white /
   black, session cookie `costar-ground`) and exposes `window.costarGround`; new
-  `/ground-menu.js` is the small header menu that sets it. Additive: pages that do not
+  `/ground-menu.js` is the small header menu that sets it (a text label such as
+  "shade", optionally centered in its parent). Additive: pages that do not
   load the menu behave as before.
 
 ## 2026-10-22 — public day-signature kit files · dataset 2026-07-05 (unchanged)
