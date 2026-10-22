@@ -264,6 +264,8 @@ def main():
     for item in static_dir.iterdir():
         if item.name == "openapi.json":
             shutil.copyfile(item, out / "v1/openapi.json")
+        elif item.is_dir():  # kit/: the public day-signature assets (logo, moon frames)
+            shutil.copytree(item, out / item.name, dirs_exist_ok=True)
         else:
             shutil.copyfile(item, out / item.name)
 

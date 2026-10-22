@@ -7,6 +7,13 @@ a ruling on the calendar's rules by its keeper — never silently.
 Format per entry: API changes (endpoints/payloads, additive-only within v1)
 and dataset changes (golden CSV regenerations) listed separately.
 
+## 2026-10-22 — public day-signature kit files · dataset 2026-07-05 (unchanged)
+
+- **Static**: `/kit/moon/00.jpg` … `/kit/moon/30.jpg` (the 31 lunar-phase photographs) and
+  `/kit/costar.date-logo.png` are served publicly beside `/moon-phase.js` and
+  `/moon-palette.js`, so docs and other sites outside the Access gate can carry the day
+  (approved by Kevin 2026-10-22). No endpoint or payload changes.
+
 ## 2026-10-20 — `/v1/next/{kind}` · dataset 2026-07-05 (unchanged)
 
 - **API** (later the same day): `/v1/next/{kind}` treats an empty `from=` or `count=` as

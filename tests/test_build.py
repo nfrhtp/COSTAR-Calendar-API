@@ -165,6 +165,10 @@ for p in ["/v1/today", "/v1/day/{date}", "/v1/range/{start}/{end}",
           "/v1/dataset.csv", "/v1/dataset.json", "/v1/meta"]:
     check(f"openapi covers {p}", p in spec["paths"])
 check("reference page shipped", (PUB / "reference.html").exists())
+# The public day-signature kit (Kevin, 2026-10-22): the logo and the 31 moon frames.
+check("kit: 31 moon frames 00..30", sorted(p.name for p in (PUB / "kit/moon").glob("*.jpg"))
+      == [f"{i:02d}.jpg" for i in range(31)])
+check("kit: costar.date logo", (PUB / "kit/costar.date-logo.png").exists())
 check("landing page links reference + openapi",
       all(s in (PUB / "index.html").read_text(encoding="utf-8")
           for s in ["reference.html", "/v1/openapi.json", "CHANGELOG.md"]))

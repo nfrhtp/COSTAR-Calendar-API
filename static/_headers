@@ -17,3 +17,6 @@
 
 /v1/data/*
   Cache-Control: public, max-age=3600
+
+/kit/*
+  Cache-Control: public, max-age=86400

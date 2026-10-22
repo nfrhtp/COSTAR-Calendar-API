@@ -40,3 +40,11 @@ npx wrangler dev
 Deployment: GitHub Actions runs the build + tests and `wrangler deploy` on
 every push to `main`. Conventions and settled design rulings:
 `specifications/API conventions - 2026-0721v1.md`.
+
+## Day-signature kit (public static files)
+
+`static/kit/` is served at `/kit/`: `moon/00.jpg … 30.jpg` are copies of
+`COSTAR-Project/assets/moon_imagery/lunar_phase_images/NN-moon-*.jpg` (NASA SVS renders),
+renamed to their two-digit index; `costar.date-logo.png` is the costar.date site logo with
+its white ground made transparent (as COSTAR-Date's build does). Refresh by re-copying
+from those sources; `tests/test_build.py` checks all 32 files ship.
