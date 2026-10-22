@@ -12,6 +12,15 @@
 // at 00:01 PT (the calendar's native day boundary, +1 min). Preview with
 // ?moon=D in the URL, where D is a phase day 0-29 (0 = New Moon,
 // 15 = Full Moon; 16-29 mirror the waxing days). No network calls.
+//
+// Visitor's choice (Kevin, 2026-10-22): the moon is the default and always
+// returns; a visitor may opt out for the rest of the browser session on that
+// site — "white" or "black" — stored in a session cookie `costar-ground`
+// (host-only, no expiry, so it ends when the browser closes). The choice
+// wins over the moon and over ?moon=D. API: window.costarGround.get() and
+// .set("moon" | "white" | "black"); <html data-ground> carries the current
+// choice; a "costar-ground" event fires on change. ground-menu.js is the
+// small header menu that calls it.
 (function () {
   var EPOCH = Date.UTC(2000, 10, 25); // first event date (PT), as UTC days
   var FIRST_TYPE = "N";        // "N" new or "F" full
@@ -72,10 +81,18 @@
     return (1 - Math.cos(2 * Math.PI * d / 30)) / 2;
   }
 
+  var COOKIE = "costar-ground";
+  function choice() {
+    var m = document.cookie.match(/(?:^|;\s*)costar-ground=(white|black)/);
+    return m ? m[1] : "moon";
+  }
+
   function apply() {
-    var v = overrideValue();
-    if (v === null) v = brightness(ptDayIndex(new Date()));
     var root = document.documentElement;
+    var c = choice();
+    root.setAttribute("data-ground", c);
+    var v = c === "white" ? 1 : c === "black" ? 0 : overrideValue();
+    if (v === null) v = brightness(ptDayIndex(new Date()));
     if (v === null) { // outside dataset: leave site defaults untouched
       root.style.removeProperty("--moon");
       root.style.removeProperty("--moon-bg");
@@ -87,6 +104,20 @@
     root.style.setProperty("--moon-bg", "rgb(" + g + "," + g + "," + g + ")");
     root.setAttribute("data-moon-ink", v < 0.5 ? "white" : "black");
   }
+
+  window.costarGround = {
+    get: choice,
+    set: function (c) {
+      if (c === "white" || c === "black") {
+        document.cookie = COOKIE + "=" + c + "; path=/; SameSite=Lax";
+      } else {
+        document.cookie = COOKIE + "=; path=/; SameSite=Lax; max-age=0";
+      }
+      apply();
+      try { document.dispatchEvent(new CustomEvent("costar-ground", { detail: choice() })); }
+      catch (e) {}
+    }
+  };
 
   apply();
   (function schedule() {

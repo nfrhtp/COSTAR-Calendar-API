@@ -7,6 +7,13 @@ a ruling on the calendar's rules by its keeper — never silently.
 Format per entry: API changes (endpoints/payloads, additive-only within v1)
 and dataset changes (golden CSV regenerations) listed separately.
 
+## 2026-10-22 — the visitor's ground menu · dataset 2026-07-05 (unchanged)
+
+- **Static**: `/moon-phase.js` now honors a visitor's session choice (moon / white /
+  black, session cookie `costar-ground`) and exposes `window.costarGround`; new
+  `/ground-menu.js` is the small header menu that sets it. Additive: pages that do not
+  load the menu behave as before.
+
 ## 2026-10-22 — public day-signature kit files · dataset 2026-07-05 (unchanged)
 
 - **Static**: `/kit/moon/00.jpg` … `/kit/moon/30.jpg` (the 31 lunar-phase photographs) and
