@@ -1,9 +1,9 @@
 // ground-menu.js — day-signature kit: the visitor's ground menu (COSTAR / TLGE).
 // Hand-written (not generated). Requires moon-phase.js on the page first.
 //
-// Kevin, 2026-10-22: small pale text, "shade", in the middle of the header between
-// the logo and the moon (first built as a small neutral icon; Kevin preferred the
-// word, styled like costar.date's pale api/ics links). Clicking it opens a three-line
+// Kevin, 2026-10-22: a small pale sun in the middle of the header between the logo
+// and the moon (after trying a square icon and the word "shade"; the sun is the icon
+// Archbee used for its own theme switch). Clicking it opens a three-line
 // menu — "Lunar" (the moon's shade, the default), "White", "Black", centered. The choice
 // lasts for the rest of the browser session on that site (moon-phase.js keeps it
 // in a session cookie); the next visit starts on the moon again.
